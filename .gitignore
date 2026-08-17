@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+._*
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Entregas (información sensible de clientes reales, no se sube a GitHub)
+entregas/*
+!entregas/.gitkeep
+!entregas/README.md
+
+# Archivos temporales
+*.tmp
+*.log
+.env
+.env.local
+
+# Node (por si en algún momento agregamos build tools)
+node_modules/

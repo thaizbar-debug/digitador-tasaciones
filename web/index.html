@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Digitador de Tasaciones</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #2f5eff;
+    --accent-soft: #eef2ff;
+    --ok: #16a34a;
+    --warn: #b45309;
+    --danger: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  header {
+    padding: 32px 24px 16px;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    color: var(--muted);
+    margin: 0;
+  }
+  main {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 24px 64px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 18px;
+    margin: 0 0 16px;
+    font-weight: 600;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; }
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  label .hint {
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 6px;
+  }
+  input[type="text"], select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type="text"]:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47, 94, 255, 0.15);
+  }
+  .drop {
+    border: 2px dashed var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    background: #fafbff;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 12px;
+  }
+  .drop:hover, .drop.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .drop input[type="file"] {
+    display: none;
+  }
+  .drop .title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .drop .sub {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .file-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+  }
+  .file-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .file-list button {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+  textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 70px;
+    outline: none;
+  }
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47, 94, 255, 0.15);
+  }
+  .actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 8px;
+  }
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button.primary:hover { opacity: 0.9; }
+  button.primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .status {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .status.ok { color: var(--ok); }
+  .status.warn { color: var(--warn); }
+  .status.danger { color: var(--danger); }
+  .instructions {
+    display: none;
+    background: var(--accent-soft);
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .instructions.visible { display: block; }
+  .instructions h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  .instructions ol { margin: 0; padding-left: 20px; }
+  .instructions li { margin-bottom: 8px; }
+  code {
+    background: #1f2430;
+    color: #f6f7fb;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  .step-num {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Digitador de Tasaciones</h1>
+  <p>Sube la documentación que envió el tasador y descarga el paquete listo para que el skill lo procese.</p>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2><span class="step-num">1</span>Datos del trabajo</h2>
+    <div class="row">
+      <div>
+        <label for="jobName">Nombre del trabajo <span class="hint">(ej. 2026-08-17-lopez-miraflores)</span></label>
+        <input type="text" id="jobName" placeholder="2026-08-17-cliente-distrito" autocomplete="off" />
+      </div>
+      <div>
+        <label for="bank">Formato del cliente</label>
+        <select id="bank">
+          <option value="">Elige un banco</option>
+          <option value="bcp">BCP</option>
+          <option value="bbva">BBVA</option>
+          <option value="interbank">Interbank</option>
+          <option value="scotiabank">Scotiabank</option>
+          <option value="particular">Particular</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top: 16px;">
+      <label for="notas">Notas para el skill <span class="hint">(opcional)</span></label>
+      <textarea id="notas" placeholder="Ej. El tasador dice que el borrador tiene una corrección manual en la página 3."></textarea>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">2</span>Documentos del tasador</h2>
+
+    <div class="drop-zone-container" data-key="fotos" data-label="Fotos del inmueble" data-sub="Fachada, interior, ambientes, exterior. Formatos: JPG, PNG, HEIC."></div>
+    <div class="drop-zone-container" data-key="partidas-arancelarias" data-label="Partidas arancelarias" data-sub="Documentos SUNAT o municipales. PDF o imagen."></div>
+    <div class="drop-zone-container" data-key="pu" data-label="PU (predios urbanos)" data-sub="Formulario oficial del predio urbano."></div>
+    <div class="drop-zone-container" data-key="borrador" data-label="Borrador del tasador" data-sub="Fuente principal del contenido. Word, PDF, o escaneo."></div>
+    <div class="drop-zone-container" data-key="otros" data-label="Otros" data-sub="Título de propiedad, minuta, planos, cualquier anexo adicional."></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">3</span>Preparar paquete</h2>
+    <div class="actions">
+      <button class="primary" id="btnPackage">Preparar paquete</button>
+      <button class="ghost" id="btnReset">Empezar de nuevo</button>
+      <span class="status" id="status"></span>
+    </div>
+
+    <div class="instructions" id="instructions">
+      <h3>Paquete descargado. Sigue estos pasos:</h3>
+      <ol>
+        <li>Descomprime el ZIP dentro de la carpeta <code>entregas/</code> del proyecto.</li>
+        <li>Abre Claude Code en la carpeta raíz <code>digitador-tasaciones</code>.</li>
+        <li>Escribe este comando: <code id="cmd">digitar el trabajo &lt;nombre&gt;</code></li>
+        <li>Revisa el output en <code>entregas/&lt;nombre&gt;/output/</code> antes de enviar al cliente.</li>
+      </ol>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  const state = {
+    fotos: [],
+    "partidas-arancelarias": [],
+    pu: [],
+    borrador: [],
+    otros: [],
+  };
+
+  function humanSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  function renderFileList(container, key) {
+    const existing = container.querySelector(".file-list");
+    if (existing) existing.remove();
+    if (state[key].length === 0) return;
+    const ul = document.createElement("ul");
+    ul.className = "file-list";
+    state[key].forEach((file, idx) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${file.name} <span style="color:var(--muted)">(${humanSize(file.size)})</span></span>`;
+      const btn = document.createElement("button");
+      btn.textContent = "quitar";
+      btn.onclick = () => {
+        state[key].splice(idx, 1);
+        renderFileList(container, key);
+      };
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+    container.appendChild(ul);
+  }
+
+  function addFiles(key, container, files) {
+    for (const f of files) state[key].push(f);
+    renderFileList(container, key);
+  }
+
+  function buildDropZone(container) {
+    const key = container.dataset.key;
+    const label = container.dataset.label;
+    const sub = container.dataset.sub;
+    container.innerHTML = `
+      <div class="drop" tabindex="0">
+        <div class="title">${label}</div>
+        <div class="sub">${sub}</div>
+        <div class="sub" style="margin-top:6px;">Arrastra aquí o haz click para elegir archivos.</div>
+        <input type="file" multiple />
+      </div>
+    `;
+    const drop = container.querySelector(".drop");
+    const input = container.querySelector("input[type=file]");
+    drop.onclick = () => input.click();
+    drop.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") input.click(); };
+    input.onchange = () => addFiles(key, container, input.files);
+    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("dragover"); };
+    drop.ondragleave = () => drop.classList.remove("dragover");
+    drop.ondrop = (e) => {
+      e.preventDefault();
+      drop.classList.remove("dragover");
+      addFiles(key, container, e.dataTransfer.files);
+    };
+  }
+
+  document.querySelectorAll(".drop-zone-container").forEach(buildDropZone);
+
+  const status = document.getElementById("status");
+  const instructions = document.getElementById("instructions");
+  const cmd = document.getElementById("cmd");
+
+  function setStatus(msg, cls) {
+    status.className = "status" + (cls ? " " + cls : "");
+    status.textContent = msg || "";
+  }
+
+  document.getElementById("btnPackage").onclick = async () => {
+    const jobName = document.getElementById("jobName").value.trim();
+    const bank = document.getElementById("bank").value;
+    const notas = document.getElementById("notas").value.trim();
+
+    if (!jobName) { setStatus("Falta el nombre del trabajo.", "warn"); return; }
+    if (!/^[a-zA-Z0-9._-]+$/.test(jobName)) {
+      setStatus("El nombre solo puede tener letras, números, guiones y puntos.", "warn");
+      return;
+    }
+    if (!bank) { setStatus("Falta elegir el banco.", "warn"); return; }
+    if (state.borrador.length === 0) {
+      setStatus("Falta el borrador del tasador (es la fuente principal).", "warn");
+      return;
+    }
+
+    setStatus("Empaquetando archivos...");
+    const zip = new JSZip();
+    const root = zip.folder(jobName);
+
+    const manifest = {
+      jobName,
+      banco: bank,
+      notas,
+      creado: new Date().toISOString(),
+      archivos: {},
+    };
+
+    const folders = ["fotos", "partidas-arancelarias", "pu", "borrador", "otros"];
+    const inputs = root.folder("inputs");
+    for (const key of folders) {
+      const folder = inputs.folder(key);
+      manifest.archivos[key] = [];
+      for (const file of state[key]) {
+        folder.file(file.name, file);
+        manifest.archivos[key].push(file.name);
+      }
+    }
+
+    root.file("manifest.json", JSON.stringify(manifest, null, 2));
+    root.folder("output");
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${jobName}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    setStatus("Listo. ZIP descargado.", "ok");
+    cmd.textContent = `digitar el trabajo ${jobName}`;
+    instructions.classList.add("visible");
+  };
+
+  document.getElementById("btnReset").onclick = () => {
+    for (const k of Object.keys(state)) state[k] = [];
+    document.getElementById("jobName").value = "";
+    document.getElementById("bank").value = "";
+    document.getElementById("notas").value = "";
+    document.querySelectorAll(".drop-zone-container").forEach(buildDropZone);
+    instructions.classList.remove("visible");
+    setStatus("");
+  };
+</script>
+
+</body>
+</html>
