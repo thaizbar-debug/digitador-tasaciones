@@ -33,12 +33,11 @@ digitador-tasaciones/
    - Borrador del tasador
    - Otros (opcional)
 4. Click en **Generar informe**. La página carga la plantilla oficial del banco, transfiere los datos del borrador celda por celda respetando las fórmulas oficiales, y descarga un ZIP con:
-   - `inputs/` con toda la documentación original ordenada.
-   - `output/informe-<trabajo>-<banco>.xlsx`, la plantilla oficial ya rellenada.
-   - `output/revisar.md`, checklist manual antes de enviar (fotos por pegar, cruzar con PU, campos del banco, etc.).
-   - `output/anexo-fotografico.md`, listado de las fotos con rotulado sugerido.
+   - `informe-<trabajo>-<banco>.xlsx`, la plantilla oficial ya rellenada.
+   - `revisar.md`, checklist manual antes de enviar (fotos por pegar, cruzar con PU, campos del banco, etc.).
+   - `anexo-fotografico.md`, listado de las fotos con rotulado sugerido.
    - `manifest.json` con metadata del trabajo y estadísticas del merge.
-5. Descomprime el ZIP donde quieras (por ejemplo dentro de `entregas/`), abre el Excel, pega las fotos manualmente en la hoja `FOTO` y revisa el `revisar.md` antes de enviar al banco.
+5. Descomprime el ZIP, abre el Excel, pega las fotos manualmente en la hoja `FOTO` y revisa el `revisar.md` antes de enviar al banco.
 
 Todo el procesamiento ocurre en tu navegador. No se sube nada a servidores externos.
 
