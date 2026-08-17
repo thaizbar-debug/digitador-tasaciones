@@ -48,35 +48,34 @@ Antes de mirar los inputs, lee:
 
 Esto te da vocabulario y reglas implícitas del equipo.
 
-### 3. Lee la plantilla y la guía del banco
+### 3. Lee la plantilla oficial del banco
 
-Ve a `formatos/<banco>/`. Ahí vive:
+Ve a `formatos/<banco>/` y toma el archivo `.xlsx` que esté ahí (es único por banco). También lee el `README.md` de esa carpeta si existe. Si no hay ningún `.xlsx`, detén el proceso y avísale a la digitadora.
 
-- Uno o más archivos `.xlsx` con la estructura oficial. El nombre del archivo suele indicar el tipo de inmueble (`DEPARTAMENTO`, `CASA`, `INMUEBLE`). Si hay varios, elige el que coincida con el tipo de inmueble del trabajo; si no puedes deducirlo, pregúntale a la digitadora.
-- `README.md` con notas específicas del formato.
-
-Si no hay ningún `.xlsx` en la carpeta del banco, detén el proceso y avísale a la digitadora que falta cargar el formato en `formatos/<banco>/`.
-
-Para leer el Excel usa las herramientas disponibles (por ejemplo `python -c "import openpyxl..."` o similar). Respeta las fórmulas: no las sobrescribas con valores; escribe sólo en las celdas de entrada.
+Para leer y escribir Excel usa `openpyxl` en Python. Respeta las fórmulas: no las sobrescribas con valores; escribe sólo en las celdas de entrada.
 
 ### 4. Lee todos los inputs del trabajo
 
-- Extrae texto de PDFs con las herramientas disponibles.
-- Para las fotos, lee cada imagen y describe brevemente qué se ve (fachada, sala, baño, vista exterior, etc.) para poder rotularlas en el informe.
-- El borrador del tasador es tu fuente principal de contenido. Las partidas y el PU son fuentes de datos catastrales y valores oficiales. Cruza la información: si el borrador dice X área y el PU dice Y área, señálalo como discrepancia en vez de elegir uno.
+- Extrae texto de PDFs (por ejemplo con `pdftotext` o similar).
+- Para las fotos, mira cada imagen y describe brevemente qué se ve (fachada, sala, baño, vista exterior, etc.) para poder rotularlas.
+- El borrador del tasador es la fuente principal de contenido. **Importante**: el borrador muchas veces viene en un Excel con estructura parecida a la plantilla oficial del banco (mismas hojas), pero con hojas auxiliares extra y datos aún por verificar. Trátalo como **fuente de datos**, no como base del output.
+- Las partidas y el PU son fuentes de datos catastrales y valores oficiales. Cruza la información: si el borrador dice X área y el PU dice Y área, señálalo como discrepancia en vez de elegir uno.
 
 ### 5. Genera el informe final
 
-Produce una copia de la plantilla del banco con las celdas rellenadas, guardándola en:
+El output es **una copia de la plantilla oficial del banco, rellenada con los datos del trabajo**. La estructura, las hojas, las fórmulas y el formato deben ser exactamente los de la plantilla; el borrador solo aporta los datos.
 
-`entregas/<trabajo>/output/informe-<trabajo>-<banco>.xlsx`
+Pasos:
 
-Nunca modifiques la plantilla original en `formatos/<banco>/`. Copia primero, luego edita la copia.
+1. Copia `formatos/<banco>/<plantilla>.xlsx` a `entregas/<trabajo>/output/informe-<trabajo>-<banco>.xlsx`. Nunca edites el archivo original.
+2. Rellena las celdas de entrada de la copia con datos del borrador, PU y partidas.
+3. Cuando el borrador tenga la misma estructura de hojas que la plantilla, puedes mapear celda a celda hoja por hoja para acelerar; pero verifica cada valor antes de escribirlo y **nunca copies fórmulas del borrador sobre celdas de la plantilla que tengan sus propias fórmulas**.
+4. Ignora hojas auxiliares del borrador que no existan en la plantilla oficial (por ejemplo `C2`, `Hoja4`).
 
 Incluye también:
 
-- `entregas/<trabajo>/output/anexo-fotografico.md` con las fotos rotuladas y organizadas por ambiente. (Las fotos originales quedan en `inputs/fotos/`; la digitadora las pegará al Excel manualmente si el formato lo requiere.)
-- `entregas/<trabajo>/output/revisar.md` con un checklist de campos que la digitadora debe verificar manualmente (todo lo que inferiste, todo campo que quedó vacío, toda discrepancia entre fuentes, cualquier celda que dejaste con `[FALTA:]`).
+- `entregas/<trabajo>/output/anexo-fotografico.md` con las fotos rotuladas y organizadas por ambiente. Las fotos originales quedan en `inputs/fotos/`; la digitadora las pegará al Excel manualmente en la hoja `FOTO` (o equivalente) si el formato lo requiere.
+- `entregas/<trabajo>/output/revisar.md` con un checklist de campos que la digitadora debe verificar manualmente: todo lo que inferiste, todo campo que quedó vacío, toda discrepancia entre fuentes, cualquier celda que dejaste con `[FALTA:]`.
 
 ## Reglas duras
 

@@ -280,6 +280,9 @@
 
   <section class="card">
     <h2><span class="step-num">3</span>Preparar paquete</h2>
+    <p style="margin: 0 0 12px; color: var(--muted); font-size: 14px;">
+      Se descarga un ZIP con toda la documentación organizada. El paso siguiente (que corres en Claude Code) toma este paquete y genera el <strong>informe final en el formato oficial del banco elegido</strong> dentro de la carpeta <code style="background:#eef2ff;color:#1f2430;">output/</code>.
+    </p>
     <div class="actions">
       <button class="primary" id="btnPackage">Preparar paquete</button>
       <button class="ghost" id="btnReset">Empezar de nuevo</button>
@@ -287,12 +290,13 @@
     </div>
 
     <div class="instructions" id="instructions">
-      <h3>Paquete descargado. Sigue estos pasos:</h3>
+      <h3>Paquete descargado. Ahora, para generar el informe final:</h3>
       <ol>
         <li>Descomprime el ZIP dentro de la carpeta <code>entregas/</code> del proyecto.</li>
         <li>Abre Claude Code en la carpeta raíz <code>digitador-tasaciones</code>.</li>
-        <li>Escribe este comando: <code id="cmd">digitar el trabajo &lt;nombre&gt;</code></li>
-        <li>Revisa el output en <code>entregas/&lt;nombre&gt;/output/</code> antes de enviar al cliente.</li>
+        <li>Escribe: <code id="cmd">digitar el trabajo &lt;nombre&gt;</code></li>
+        <li>El skill copia la plantilla oficial del banco, rellena los datos desde el borrador y las fuentes, y guarda el Excel final en <code>entregas/&lt;nombre&gt;/output/</code>.</li>
+        <li>Revisa el archivo <code>revisar.md</code> que también se genera ahí antes de enviar al cliente.</li>
       </ol>
     </div>
   </section>
