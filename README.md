@@ -32,23 +32,37 @@ digitador-tasaciones/
    - PU (predios urbanos)
    - Borrador del tasador
    - Otros (opcional)
-4. Click en **Preparar paquete**. Se descarga un ZIP.
-5. Descomprime el ZIP dentro de la carpeta `entregas/` de este proyecto.
-6. Abre Claude Code en la raíz del proyecto y escribe:
-   `digitar el trabajo <nombre-del-trabajo>`
-7. El skill lee los archivos, lee el formato del banco elegido, y genera el informe final dentro de la misma carpeta del trabajo.
+4. Click en **Generar informe**. La página carga la plantilla oficial del banco, transfiere los datos del borrador celda por celda respetando las fórmulas oficiales, y descarga un ZIP con:
+   - `inputs/` con toda la documentación original ordenada.
+   - `output/informe-<trabajo>-<banco>.xlsx`, la plantilla oficial ya rellenada.
+   - `output/revisar.md`, checklist manual antes de enviar (fotos por pegar, cruzar con PU, campos del banco, etc.).
+   - `output/anexo-fotografico.md`, listado de las fotos con rotulado sugerido.
+   - `manifest.json` con metadata del trabajo y estadísticas del merge.
+5. Descomprime el ZIP donde quieras (por ejemplo dentro de `entregas/`), abre el Excel, pega las fotos manualmente en la hoja `FOTO` y revisa el `revisar.md` antes de enviar al banco.
+
+Todo el procesamiento ocurre en tu navegador. No se sube nada a servidores externos.
 
 ## Requisitos
 
-- Claude Code instalado ([claude.com/claude-code](https://claude.com/claude-code)).
 - Navegador moderno (Chrome, Edge, Safari, Firefox) para abrir `web/index.html`.
-- Las plantillas oficiales de cada banco colocadas dentro de `formatos/<banco>/`.
+- Las plantillas oficiales de cada banco colocadas dentro de `formatos/<banco>/` (ya cargadas).
+- (Opcional) Claude Code, si quieres correr el skill `digitador` para procesamiento asistido por IA.
+
+## Actualizar plantillas
+
+Si un banco actualiza su plantilla, reemplaza el `.xlsx` en `formatos/<banco>/` y luego corre:
+
+```
+./build-plantillas.sh
+```
+
+Esto regenera `web/plantillas.js` (donde el HTML tiene embebidas las plantillas en base64). Después haz commit del cambio.
 
 ## Estado
 
 - [x] Estructura de carpetas
-- [x] Skill `digitador` (SKILL.md)
-- [x] Interfaz HTML
-- [x] Plantillas oficiales de los 5 bancos en `formatos/`
+- [x] Interfaz HTML con merge automático (SheetJS)
+- [x] Plantillas oficiales de los 5 bancos en `formatos/` y embebidas en `web/plantillas.js`
+- [x] Skill `digitador` (SKILL.md) para procesamiento asistido por IA (opcional)
 - [ ] Contexto y glosario completos
-- [ ] Guías por banco (`formatos/<banco>/guia.md`) con reglas específicas
+- [ ] Guías por banco con reglas específicas del formato
