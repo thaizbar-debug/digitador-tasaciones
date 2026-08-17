@@ -1,10 +1,9 @@
-# Formato BCP
+# Formato BCP (Cibergestión)
 
-## Archivos esperados
+## Plantilla vigente
 
-- `plantilla.docx` (o `.pdf`) — Plantilla oficial vigente del BCP.
-- `guia.md` — Notas específicas de este formato.
+- `FORMATO_CIBERGESTION-BCP_DEPARTAMENTO_2026.xlsx` — Departamentos, versión 2026 vía Cibergestión.
 
 ## Guía rápida
 
-_Completar con las particularidades del formato BCP: secciones obligatorias, campos que suelen quedar en blanco, redacción típica, unidades y decimales, cómo se anexan las fotos, etc._
+_Completar con las particularidades del formato BCP: hojas obligatorias del Excel, celdas con fórmulas que no se deben tocar, formato de valores y decimales, cómo se anexan las fotos, etc._

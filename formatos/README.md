@@ -4,20 +4,20 @@ Plantillas oficiales de cada cliente. El skill `digitador` las lee antes de gene
 
 ## Estructura por banco
 
-Cada carpeta debe contener:
+Cada carpeta contiene:
 
-- La plantilla original tal como la exige el banco (`.docx`, `.pdf`, o `.xlsx`).
-- `guia.md` con notas específicas del formato: campos obligatorios, redacción esperada, unidades, orden de secciones, etc.
-- `ejemplo.md` (opcional) con un informe completo ya digitado en ese formato, útil como referencia.
+- La plantilla oficial en `.xlsx` (todas las actuales son Excel).
+- `README.md` con las particularidades del formato: hojas obligatorias, celdas con fórmulas, formato de valores, etc.
+- `versiones-anteriores/` (opcional) para archivar plantillas viejas.
 
 ## Bancos
 
+- `banbif/`
 - `bcp/`
-- `bbva/`
 - `interbank/`
 - `scotiabank/`
 - `particular/`
 
-## Convención de nombres
+## Convención
 
-Nombra el archivo de plantilla como `plantilla.docx` (o `.pdf`, `.xlsx`) para que el skill lo encuentre sin ambigüedad. Si tienes varias versiones, mantén sólo la vigente en la raíz y mueve las viejas a `versiones-anteriores/`.
+El skill busca cualquier archivo `.xlsx` en la carpeta del banco. Mantén sólo la versión vigente en la raíz de la carpeta y mueve las anteriores a `versiones-anteriores/` cuando se actualicen. El nombre del archivo suele indicar el tipo de inmueble (DEPARTAMENTO, CASA, INMUEBLE); ese dato es relevante y no debe perderse al renombrar.

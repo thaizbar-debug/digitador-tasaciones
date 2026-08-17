@@ -1,10 +1,9 @@
 # Formato Scotiabank
 
-## Archivos esperados
+## Plantilla vigente
 
-- `plantilla.docx` (o `.pdf`) — Plantilla oficial vigente de Scotiabank.
-- `guia.md` — Notas específicas de este formato.
+- `FORMATO_SCOTIABANK_CASA_2026.xlsx` — Casas, versión 2026.
 
 ## Guía rápida
 
-_Completar con las particularidades del formato Scotiabank._
+_Completar con las particularidades del formato Scotiabank. Nota: la plantilla actual es específica para casas. Si llega un trabajo de departamento, confirmar con el equipo qué formato usar._

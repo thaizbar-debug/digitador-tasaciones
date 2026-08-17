@@ -1,6 +1,6 @@
 ---
 name: digitador
-description: Transcribe informes de tasación inmobiliaria peruana al formato oficial del cliente. Toma la documentación que el tasador envió a la digitadora (fotos del inmueble, partidas arancelarias, PU o predios urbanos, borrador del tasador, otros anexos) y produce el informe final en el formato de BCP, BBVA, Interbank, Scotiabank o particular. Actívalo cuando el usuario diga "digitar", "digitar tasación", "digitar trabajo", "transcribir informe de tasación", "generar informe de tasación", o cuando mencione que tiene una carpeta de trabajo en entregas/ lista para procesar.
+description: Transcribe informes de tasación inmobiliaria peruana al formato oficial del cliente. Toma la documentación que el tasador envió a la digitadora (fotos del inmueble, partidas arancelarias, PU o predios urbanos, borrador del tasador, otros anexos) y produce el informe final en el formato de Banbif, BCP (Cibergestión), Interbank (MiVivienda), Scotiabank o particular. Actívalo cuando el usuario diga "digitar", "digitar tasación", "digitar trabajo", "transcribir informe de tasación", "generar informe de tasación", o cuando mencione que tiene una carpeta de trabajo en entregas/ lista para procesar.
 ---
 
 # Skill: digitador
@@ -32,7 +32,7 @@ Dentro de `entregas/<nombre-del-trabajo>/` va a haber:
 
 Empieza leyendo `entregas/<trabajo>/manifest.json`. De ahí sacas:
 
-- `banco`: uno de `bcp`, `bbva`, `interbank`, `scotiabank`, `particular`.
+- `banco`: uno de `banbif`, `bcp`, `interbank`, `scotiabank`, `particular`.
 - `jobName`: el identificador del trabajo.
 - `notas`: instrucciones opcionales de la digitadora.
 
@@ -52,10 +52,12 @@ Esto te da vocabulario y reglas implícitas del equipo.
 
 Ve a `formatos/<banco>/`. Ahí vive:
 
-- `plantilla.docx` (o `.pdf`, `.xlsx`) con la estructura oficial.
-- `guia.md` con notas específicas (secciones obligatorias, redacción típica, unidades, decimales).
+- Uno o más archivos `.xlsx` con la estructura oficial. El nombre del archivo suele indicar el tipo de inmueble (`DEPARTAMENTO`, `CASA`, `INMUEBLE`). Si hay varios, elige el que coincida con el tipo de inmueble del trabajo; si no puedes deducirlo, pregúntale a la digitadora.
+- `README.md` con notas específicas del formato.
 
-Si la plantilla no existe, detén el proceso y avísale a la digitadora que falta cargar el formato en `formatos/<banco>/`.
+Si no hay ningún `.xlsx` en la carpeta del banco, detén el proceso y avísale a la digitadora que falta cargar el formato en `formatos/<banco>/`.
+
+Para leer el Excel usa las herramientas disponibles (por ejemplo `python -c "import openpyxl..."` o similar). Respeta las fórmulas: no las sobrescribas con valores; escribe sólo en las celdas de entrada.
 
 ### 4. Lee todos los inputs del trabajo
 
@@ -65,16 +67,16 @@ Si la plantilla no existe, detén el proceso y avísale a la digitadora que falt
 
 ### 5. Genera el informe final
 
-Produce el informe respetando la estructura de la plantilla del banco. Guárdalo en:
+Produce una copia de la plantilla del banco con las celdas rellenadas, guardándola en:
 
-`entregas/<trabajo>/output/informe-<trabajo>-<banco>.md`
+`entregas/<trabajo>/output/informe-<trabajo>-<banco>.xlsx`
 
-Y una versión `.docx` si puedes generarla (usando pandoc si está disponible, o dejando instrucciones claras si no).
+Nunca modifiques la plantilla original en `formatos/<banco>/`. Copia primero, luego edita la copia.
 
 Incluye también:
 
-- `entregas/<trabajo>/output/anexo-fotografico.md` con las fotos rotuladas y organizadas por ambiente.
-- `entregas/<trabajo>/output/revisar.md` con un checklist de campos que la digitadora debe verificar manualmente (todo lo que inferiste, todo campo que quedó vacío, toda discrepancia entre fuentes).
+- `entregas/<trabajo>/output/anexo-fotografico.md` con las fotos rotuladas y organizadas por ambiente. (Las fotos originales quedan en `inputs/fotos/`; la digitadora las pegará al Excel manualmente si el formato lo requiere.)
+- `entregas/<trabajo>/output/revisar.md` con un checklist de campos que la digitadora debe verificar manualmente (todo lo que inferiste, todo campo que quedó vacío, toda discrepancia entre fuentes, cualquier celda que dejaste con `[FALTA:]`).
 
 ## Reglas duras
 
@@ -96,7 +98,7 @@ Al terminar, dile a la digitadora:
 
 ## Si algo falta
 
-- Falta plantilla del banco: pide que la carguen en `formatos/<banco>/plantilla.docx`.
+- Falta plantilla del banco: pide que la carguen como `.xlsx` en `formatos/<banco>/`.
 - Falta borrador del tasador: no se puede continuar. Pide que lo agreguen a `inputs/borrador/`.
 - Manifest ausente: pregunta el banco y el nombre del trabajo.
 - Documento ilegible: reporta cuál y pide una versión mejor escaneada.

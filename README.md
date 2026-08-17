@@ -4,9 +4,9 @@ Herramienta interna para las digitadoras de una empresa peruana de tasaciones. C
 
 ## Bancos soportados
 
-1. BCP
-2. BBVA
-3. Interbank
+1. Banbif
+2. BCP (Cibergestión)
+3. Interbank (incluye MiVivienda)
 4. Scotiabank
 5. Particular
 
@@ -49,5 +49,6 @@ digitador-tasaciones/
 - [x] Estructura de carpetas
 - [x] Skill `digitador` (SKILL.md)
 - [x] Interfaz HTML
-- [ ] Plantillas oficiales de los 5 bancos en `formatos/` (pendiente de cargar)
+- [x] Plantillas oficiales de los 5 bancos en `formatos/`
 - [ ] Contexto y glosario completos
+- [ ] Guías por banco (`formatos/<banco>/guia.md`) con reglas específicas
