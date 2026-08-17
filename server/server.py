@@ -19,11 +19,8 @@ O simplemente doble click a abrir.command en la raíz del proyecto.
 """
 
 import io
-import json
 import tempfile
 import warnings
-import zipfile
-from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
@@ -166,95 +163,10 @@ def insert_fotos(wb, foto_paths):
     return result
 
 
-def infer_caption(filename: str) -> str:
-    mapping = {
-        "fachada": "Fachada del inmueble",
-        "entorno": "Entorno / vista exterior",
-        "sala": "Sala",
-        "comedor": "Comedor",
-        "cocina": "Cocina",
-        "baño": "Baño",
-        "bano": "Baño",
-        "patio": "Patio",
-        "dormitorio": "Dormitorio",
-        "numeracion": "Numeración del inmueble",
-        "numeración": "Numeración del inmueble",
-        "medidor": "Medidor",
-        "colindante": "Colindante",
-    }
-    lower = filename.lower().rsplit(".", 1)[0]
-    for key, cap in mapping.items():
-        if key in lower:
-            return cap
-    return "Sin rotular (revisar)"
-
-
-def generar_revisar_md(job_name, banco, stats, manifest, foto_result):
-    L = [
-        "# Revisar antes de enviar al banco",
-        "",
-        f"Trabajo: **{job_name}**",
-        f"Banco: **{banco}**",
-        f"Plantilla usada: `{stats['plantillaFilename']}`",
-        f"Generado: {datetime.now().isoformat()}",
-        "",
-        "## Resumen del procesamiento",
-        "",
-        f"- Celdas escritas: **{stats['celdasEscritas']}** en {len(stats['hojasProcesadas'])} hojas.",
-        f"- Fotos insertadas en la hoja FOTO: **{foto_result['insertadas']}**",
-        "",
-        "### Detalle por hoja",
-        "",
-    ]
-    for h in stats["hojasProcesadas"]:
-        L.append(f"- {h['hoja']}: {h['celdas']} celdas")
-    if stats["hojasIgnoradas"]:
-        L += ["", "### Hojas del borrador ignoradas (no existen en la plantilla oficial)", ""]
-        for h in stats["hojasIgnoradas"]:
-            L.append(f"- {h}")
-    if stats["hojasFaltantes"]:
-        L += ["", "### Hojas de la plantilla sin datos del borrador", ""]
-        for h in stats["hojasFaltantes"]:
-            L.append(f"- {h}")
-
-    L += [
-        "",
-        "## Checklist manual",
-        "",
-        f"- [ ] Reubicar las {foto_result['insertadas']} fotos al layout oficial de la hoja FOTO. {foto_result['nota']}",
-    ]
-    if manifest["archivos"]["pu"]:
-        L.append(f"- [ ] Cruzar áreas, linderos y titular contra el PU: {', '.join(manifest['archivos']['pu'])}.")
-    if not manifest["archivos"]["partidas-arancelarias"]:
-        L.append("- [ ] Atención: no se subieron partidas arancelarias. Confirmar si aplica.")
-    else:
-        L.append("- [ ] Verificar valores contra las partidas arancelarias.")
-    L.append("- [ ] Completar datos del banco en la hoja HR (funcionario, N° solicitud, agencia, DNI, email).")
-    L.append("- [ ] Confirmar que el tipo de inmueble del trabajo coincide con la plantilla usada.")
-    L.append("- [ ] Verificar que los logos y layout del banco se ven bien al abrir el archivo.")
-
-    if manifest.get("notas"):
-        L += ["", "## Notas de la digitadora", "", manifest["notas"]]
-    return "\n".join(L) + "\n"
-
-
-def generar_anexo_fotografico_md(fotos):
-    L = [
-        "# Anexo fotográfico",
-        "",
-        f"{len(fotos)} fotos. Rotulado inferido del nombre del archivo; verificar antes de enviar.",
-        "",
-    ]
-    for i, name in enumerate(fotos, 1):
-        L.append(f"{i}. **{name}** — {infer_caption(name)}")
-    return "\n".join(L) + "\n"
-
-
 @app.route("/generar", methods=["POST"])
 def generar():
     job_name = (request.form.get("jobName") or "").strip()
     banco = (request.form.get("banco") or "").strip()
-    notas = (request.form.get("notas") or "").strip()
 
     if not job_name:
         return jsonify({"error": "Falta el nombre del trabajo."}), 400
@@ -266,9 +178,6 @@ def generar():
         return jsonify({"error": "Falta el borrador del tasador."}), 400
 
     foto_files = request.files.getlist("fotos")
-    pu_files = request.files.getlist("pu")
-    partidas_files = request.files.getlist("partidas-arancelarias")
-    otros_files = request.files.getlist("otros")
 
     try:
         plantilla_path = find_plantilla(banco)
@@ -287,44 +196,18 @@ def generar():
             pf.save(fp)
             foto_paths.append(fp)
 
-        wb, stats = merge_borrador_into_plantilla(borrador_path, plantilla_path)
-        foto_result = insert_fotos(wb, foto_paths)
+        wb, _stats = merge_borrador_into_plantilla(borrador_path, plantilla_path)
+        insert_fotos(wb, foto_paths)
 
-        out_xlsx = tmp / f"informe-{job_name}-{banco}.xlsx"
-        wb.save(out_xlsx)
-
-        manifest = {
-            "jobName": job_name,
-            "banco": banco,
-            "notas": notas,
-            "creado": datetime.now().isoformat(),
-            "archivos": {
-                "fotos": [f.filename for f in foto_files],
-                "pu": [f.filename for f in pu_files],
-                "partidas-arancelarias": [f.filename for f in partidas_files],
-                "borrador": [f.filename for f in borrador_files],
-                "otros": [f.filename for f in otros_files],
-            },
-            "merge": stats,
-            "fotos": foto_result,
-        }
-
-        revisar = generar_revisar_md(job_name, banco, stats, manifest, foto_result)
-        anexo = generar_anexo_fotografico_md(manifest["archivos"]["fotos"])
-
-        zip_buf = io.BytesIO()
-        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.write(out_xlsx, arcname=out_xlsx.name)
-            zf.writestr("revisar.md", revisar)
-            zf.writestr("anexo-fotografico.md", anexo)
-            zf.writestr("manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False))
-        zip_buf.seek(0)
+        out_buf = io.BytesIO()
+        wb.save(out_buf)
+        out_buf.seek(0)
 
         return send_file(
-            zip_buf,
-            mimetype="application/zip",
+            out_buf,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             as_attachment=True,
-            download_name=f"{job_name}.zip",
+            download_name=f"informe-{job_name}-{banco}.xlsx",
         )
 
 

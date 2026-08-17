@@ -280,7 +280,7 @@
   <section class="card">
     <h2><span class="step-num">3</span>Generar informe</h2>
     <p style="margin: 0 0 12px; color: var(--muted); font-size: 14px;">
-      El server local (openpyxl) carga la plantilla oficial del banco preservando <strong>logos, colores, imágenes y fórmulas</strong>, transfiere los datos del borrador celda por celda, inserta tus fotos en la hoja FOTO, y descarga un ZIP con el informe final, <code style="background:#eef2ff;color:#1f2430;">revisar.md</code> y <code style="background:#eef2ff;color:#1f2430;">anexo-fotografico.md</code>.
+      El server local (openpyxl) carga la plantilla oficial del banco preservando <strong>logos, colores, imágenes y fórmulas</strong>, transfiere los datos del borrador celda por celda, inserta tus fotos en la hoja FOTO, y descarga el Excel final rellenado.
     </p>
     <div class="actions">
       <button class="primary" id="btnPackage">Generar informe</button>
@@ -289,12 +289,11 @@
     </div>
 
     <div class="instructions" id="instructions">
-      <h3>Informe generado. Próximos pasos:</h3>
+      <h3>Excel generado. Próximos pasos:</h3>
       <ol>
-        <li>Descomprime el ZIP.</li>
         <li>Abre <code id="cmd">informe-&lt;trabajo&gt;-&lt;banco&gt;.xlsx</code> y verifica que los logos y colores del banco estén.</li>
         <li>En la hoja FOTO, reubica las fotos al layout oficial (fueron insertadas al final de la hoja).</li>
-        <li>Revisa <code>revisar.md</code> para el checklist manual antes de enviar al cliente.</li>
+        <li>Verifica los datos antes de enviar al cliente.</li>
       </ol>
     </div>
   </section>
@@ -416,17 +415,18 @@
       }
 
       const blob = await res.blob();
+      const filename = "informe-" + jobName + "-" + bank + ".xlsx";
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = jobName + ".zip";
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      setStatus("Listo. ZIP descargado.", "ok");
-      cmd.textContent = "informe-" + jobName + "-" + bank + ".xlsx";
+      setStatus("Listo. Excel descargado.", "ok");
+      cmd.textContent = filename;
       instructions.classList.add("visible");
     } catch (err) {
       console.error(err);

@@ -34,12 +34,8 @@ digitador-tasaciones/
    - PU (predios urbanos)
    - Borrador del tasador
    - Otros (opcional)
-4. Click en **Generar informe**. El server local carga la plantilla oficial del banco (preservando logos, colores, imágenes y fórmulas), transfiere los datos del borrador celda por celda, inserta las fotos en la hoja FOTO, y devuelve un ZIP con:
-   - `informe-<trabajo>-<banco>.xlsx`, la plantilla oficial rellenada con todo el look del banco.
-   - `revisar.md`, checklist manual antes de enviar (dónde reubicar las fotos, cruzar con PU, campos del banco, etc.).
-   - `anexo-fotografico.md`, listado de fotos con rotulado sugerido.
-   - `manifest.json` con metadata del trabajo y estadísticas del merge.
-5. Descomprime el ZIP, abre el Excel, reubica las fotos al layout oficial del banco (fueron insertadas al final de la hoja FOTO) y revisa el `revisar.md` antes de enviar al banco.
+4. Click en **Generar informe**. El server local carga la plantilla oficial del banco (preservando logos, colores, imágenes y fórmulas), transfiere los datos del borrador celda por celda, inserta las fotos en la hoja FOTO, y descarga el Excel final: `informe-<trabajo>-<banco>.xlsx`.
+5. Abrí el Excel, reubica las fotos al layout oficial del banco (fueron insertadas al final de la hoja FOTO), verificá los datos y enviá al cliente.
 
 Todo el procesamiento ocurre en tu Mac. No se sube nada a servidores externos.
 
