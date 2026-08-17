@@ -4,9 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Digitador de Tasaciones</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="plantillas.js"></script>
 <style>
   :root {
     --bg: #f6f7fb;
@@ -283,7 +280,7 @@
   <section class="card">
     <h2><span class="step-num">3</span>Generar informe</h2>
     <p style="margin: 0 0 12px; color: var(--muted); font-size: 14px;">
-      El HTML carga la plantilla oficial del banco, transfiere los datos del borrador celda por celda respetando las fórmulas oficiales, y descarga un ZIP con el <strong>informe final ya rellenado</strong>, junto con <code style="background:#eef2ff;color:#1f2430;">revisar.md</code> y <code style="background:#eef2ff;color:#1f2430;">anexo-fotografico.md</code>.
+      El server local (openpyxl) carga la plantilla oficial del banco preservando <strong>logos, colores, imágenes y fórmulas</strong>, transfiere los datos del borrador celda por celda, inserta tus fotos en la hoja FOTO, y descarga un ZIP con el informe final, <code style="background:#eef2ff;color:#1f2430;">revisar.md</code> y <code style="background:#eef2ff;color:#1f2430;">anexo-fotografico.md</code>.
     </p>
     <div class="actions">
       <button class="primary" id="btnPackage">Generar informe</button>
@@ -295,8 +292,8 @@
       <h3>Informe generado. Próximos pasos:</h3>
       <ol>
         <li>Descomprime el ZIP.</li>
-        <li>Abre <code id="cmd">informe-&lt;trabajo&gt;-&lt;banco&gt;.xlsx</code> y verifica los datos.</li>
-        <li>Pega las fotos en la hoja FOTO (o equivalente).</li>
+        <li>Abre <code id="cmd">informe-&lt;trabajo&gt;-&lt;banco&gt;.xlsx</code> y verifica que los logos y colores del banco estén.</li>
+        <li>En la hoja FOTO, reubica las fotos al layout oficial (fueron insertadas al final de la hoja).</li>
         <li>Revisa <code>revisar.md</code> para el checklist manual antes de enviar al cliente.</li>
       </ol>
     </div>
@@ -382,148 +379,6 @@
     status.textContent = msg || "";
   }
 
-  function base64ToArrayBuffer(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes.buffer;
-  }
-
-  async function generarInforme(borradorFile, banco) {
-    const p = window.PLANTILLAS && window.PLANTILLAS[banco];
-    if (!p) throw new Error(`No hay plantilla registrada para "${banco}". Corre ./build-plantillas.sh.`);
-
-    const plantillaAB = base64ToArrayBuffer(p.base64);
-    const borradorAB = await borradorFile.arrayBuffer();
-
-    const plantillaWB = XLSX.read(plantillaAB, { type: "array", cellFormula: true, cellStyles: true });
-    const borradorWB = XLSX.read(borradorAB, { type: "array", cellFormula: true, cellStyles: true });
-
-    const stats = {
-      plantillaFilename: p.filename,
-      hojasProcesadas: [],
-      hojasIgnoradas: [],
-      hojasFaltantes: [],
-      celdasEscritas: 0,
-    };
-
-    const borradorByTrimmed = {};
-    borradorWB.SheetNames.forEach(n => { borradorByTrimmed[n.trim()] = n; });
-    const plantillaTrimmed = new Set(plantillaWB.SheetNames.map(n => n.trim()));
-
-    Object.keys(borradorByTrimmed).forEach(t => {
-      if (!plantillaTrimmed.has(t)) stats.hojasIgnoradas.push(borradorByTrimmed[t]);
-    });
-
-    for (const pName of plantillaWB.SheetNames) {
-      const bName = borradorByTrimmed[pName.trim()];
-      if (!bName) { stats.hojasFaltantes.push(pName); continue; }
-      const pSheet = plantillaWB.Sheets[pName];
-      const bSheet = borradorWB.Sheets[bName];
-      let written = 0;
-      for (const addr in bSheet) {
-        if (addr[0] === "!") continue;
-        const bCell = bSheet[addr];
-        if (bCell.v === undefined && bCell.w === undefined) continue;
-        const pCell = pSheet[addr];
-        if (pCell && pCell.f) continue; // preserva fórmulas oficiales
-        const value = bCell.v !== undefined ? bCell.v : bCell.w;
-        if (value === null || value === undefined) continue;
-        if (pCell) {
-          pCell.v = value;
-          if (bCell.t) pCell.t = bCell.t;
-          delete pCell.w;
-        } else {
-          pSheet[addr] = { v: value, t: bCell.t || (typeof value === "number" ? "n" : "s") };
-        }
-        written++;
-      }
-      stats.hojasProcesadas.push({ hoja: pName, celdas: written });
-      stats.celdasEscritas += written;
-    }
-
-    const outputAB = XLSX.write(plantillaWB, { bookType: "xlsx", type: "array", cellStyles: true, compression: true });
-    return { buffer: outputAB, stats };
-  }
-
-  function generarRevisarMD(jobName, banco, stats, manifest) {
-    const L = [];
-    L.push(`# Revisar antes de enviar al banco`);
-    L.push(``);
-    L.push(`Trabajo: **${jobName}**`);
-    L.push(`Banco: **${banco}**`);
-    L.push(`Plantilla usada: \`${stats.plantillaFilename}\``);
-    L.push(`Generado: ${new Date().toISOString()}`);
-    L.push(``);
-    L.push(`## Resumen del merge automático`);
-    L.push(``);
-    L.push(`- Celdas escritas: **${stats.celdasEscritas}** en ${stats.hojasProcesadas.length} hojas.`);
-    L.push(``);
-    L.push(`### Detalle por hoja`);
-    L.push(``);
-    stats.hojasProcesadas.forEach(h => L.push(`- ${h.hoja}: ${h.celdas} celdas`));
-    if (stats.hojasIgnoradas.length) {
-      L.push(``);
-      L.push(`### Hojas del borrador ignoradas (no existen en la plantilla oficial)`);
-      L.push(``);
-      stats.hojasIgnoradas.forEach(h => L.push(`- ${h}`));
-    }
-    if (stats.hojasFaltantes.length) {
-      L.push(``);
-      L.push(`### Hojas de la plantilla sin datos del borrador`);
-      L.push(``);
-      stats.hojasFaltantes.forEach(h => L.push(`- ${h}`));
-    }
-    L.push(``);
-    L.push(`## Checklist manual`);
-    L.push(``);
-    L.push(`- [ ] Pegar las ${manifest.archivos.fotos.length} fotos en la hoja FOTO (u hoja equivalente).`);
-    if (manifest.archivos.pu.length) {
-      L.push(`- [ ] Cruzar áreas, linderos y titular contra el PU: ${manifest.archivos.pu.join(", ")}.`);
-    }
-    if (manifest.archivos["partidas-arancelarias"].length) {
-      L.push(`- [ ] Verificar valores contra las partidas arancelarias.`);
-    } else {
-      L.push(`- [ ] Atención: no se subieron partidas arancelarias. Confirmar si aplica.`);
-    }
-    L.push(`- [ ] Completar datos del banco en la hoja HR (funcionario, N° solicitud, agencia, DNI, email).`);
-    L.push(`- [ ] Confirmar que el tipo de inmueble del trabajo coincide con la plantilla usada.`);
-    L.push(`- [ ] Revisar celdas que quedaron vacías o con valores por default en las hojas procesadas.`);
-    if (manifest.notas) {
-      L.push(``);
-      L.push(`## Notas de la digitadora`);
-      L.push(``);
-      L.push(manifest.notas);
-    }
-    return L.join("\n") + "\n";
-  }
-
-  function generarAnexoFotograficoMD(fotos) {
-    const cap = {
-      fachada: "Fachada del inmueble",
-      entorno: "Entorno / vista exterior",
-      sala: "Sala",
-      comedor: "Comedor",
-      cocina: "Cocina",
-      "baño": "Baño",
-      bano: "Baño",
-      patio: "Patio",
-      dormitorio: "Dormitorio",
-      numeracion: "Numeración del inmueble",
-      "numeración": "Numeración del inmueble",
-      medidor: "Medidor",
-      colindante: "Colindante",
-    };
-    const infer = (name) => {
-      const lower = name.toLowerCase().replace(/\.[^.]+$/, "");
-      for (const k in cap) if (lower.includes(k)) return cap[k];
-      return "Sin rotular (revisar)";
-    };
-    const L = [`# Anexo fotográfico`, ``, `${fotos.length} fotos. Rotulado inferido del nombre del archivo; verificar antes de pegar en la hoja FOTO.`, ``];
-    fotos.forEach((n, i) => L.push(`${i + 1}. **${n}** — ${infer(n)}`));
-    return L.join("\n") + "\n";
-  }
-
   document.getElementById("btnPackage").onclick = async () => {
     const btn = document.getElementById("btnPackage");
     const jobName = document.getElementById("jobName").value.trim();
@@ -538,70 +393,54 @@
     if (state.borrador.length === 0) {
       setStatus("Falta el borrador del tasador (es la fuente principal).", "warn"); return;
     }
-    if (typeof XLSX === "undefined") {
-      setStatus("No se cargó la librería XLSX. Verifica tu conexión a internet.", "danger"); return;
-    }
-    if (typeof window.PLANTILLAS === "undefined") {
-      setStatus("No se cargó plantillas.js. Corre ./build-plantillas.sh.", "danger"); return;
+    if (window.location.protocol === "file:") {
+      setStatus("Necesitas correr abrir.command primero para levantar el server local.", "danger"); return;
     }
 
     btn.disabled = true;
     try {
-      setStatus("Cargando plantilla oficial y borrador...");
-      const borradorFile = state.borrador[0];
-      if (state.borrador.length > 1) {
-        console.warn("Hay más de un borrador; solo se usa el primero:", borradorFile.name);
-      }
-
-      setStatus("Rellenando plantilla del banco con datos del borrador...");
-      const { buffer, stats } = await generarInforme(borradorFile, bank);
-
-      setStatus("Empaquetando ZIP con el informe final...");
-      const zip = new JSZip();
-
-      const manifest = {
-        jobName,
-        banco: bank,
-        notas,
-        creado: new Date().toISOString(),
-        archivos: {},
-        merge: {
-          plantillaFilename: stats.plantillaFilename,
-          celdasEscritas: stats.celdasEscritas,
-          hojasProcesadas: stats.hojasProcesadas,
-          hojasIgnoradas: stats.hojasIgnoradas,
-          hojasFaltantes: stats.hojasFaltantes,
-        },
-      };
+      setStatus("Enviando archivos al server local...");
+      const form = new FormData();
+      form.append("jobName", jobName);
+      form.append("banco", bank);
+      form.append("notas", notas);
       for (const key of ["fotos", "partidas-arancelarias", "pu", "borrador", "otros"]) {
-        manifest.archivos[key] = state[key].map(f => f.name);
+        for (const file of state[key]) form.append(key, file, file.name);
       }
 
-      zip.file(`informe-${jobName}-${bank}.xlsx`, buffer);
-      zip.file("revisar.md", generarRevisarMD(jobName, bank, stats, manifest));
-      zip.file("anexo-fotografico.md", generarAnexoFotograficoMD(manifest.archivos.fotos));
-      zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+      const res = await fetch("/generar", { method: "POST", body: form });
+      if (!res.ok) {
+        let errMsg = "HTTP " + res.status;
+        try { const j = await res.json(); if (j.error) errMsg = j.error; } catch {}
+        throw new Error(errMsg);
+      }
 
-      const blob = await zip.generateAsync({ type: "blob" });
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${jobName}.zip`;
+      a.download = jobName + ".zip";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      setStatus(`Listo. ${stats.celdasEscritas} celdas escritas en ${stats.hojasProcesadas.length} hojas. ZIP descargado.`, "ok");
-      cmd.textContent = `informe-${jobName}-${bank}.xlsx`;
+      setStatus("Listo. ZIP descargado.", "ok");
+      cmd.textContent = "informe-" + jobName + "-" + bank + ".xlsx";
       instructions.classList.add("visible");
     } catch (err) {
       console.error(err);
-      setStatus("Error: " + err.message, "danger");
+      const msg = err.message || String(err);
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+        setStatus("No se pudo conectar al server local. ¿Está corriendo abrir.command?", "danger");
+      } else {
+        setStatus("Error: " + msg, "danger");
+      }
     } finally {
       btn.disabled = false;
     }
   };
+
 
   document.getElementById("btnReset").onclick = () => {
     for (const k of Object.keys(state)) state[k] = [];

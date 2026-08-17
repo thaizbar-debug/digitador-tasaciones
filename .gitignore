@@ -20,3 +20,7 @@ entregas/*
 
 # Node (por si en algún momento agregamos build tools)
 node_modules/
+
+# Python venv (creado por abrir.command)
+.venv/
+__pycache__/
